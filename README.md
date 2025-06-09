@@ -1,4 +1,5 @@
-# Crypto Wallet App
+# PromptNode
+
 
 A full-stack cryptocurrency wallet application built with React Native and Node.js.
 
