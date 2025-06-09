@@ -1,0 +1,103 @@
+datasource db {
+    provider = "postgresql"
+    url      = env("DATABASE_URL")
+}
+
+generator client {
+    provider = "prisma-client-js"
+}
+
+model User {
+    id           String        @id @default(uuid())
+    email        String?       @unique
+    phone        String?       @unique
+    firebaseUid  String        @unique
+    createdAt    DateTime      @default(now())
+    updatedAt    DateTime      @updatedAt
+    wallet       Wallet?
+    transactions Transaction[] @relation("UserTransactions")
+    sentTx       Transaction[] @relation("SenderTransactions")
+    receivedTx   Transaction[] @relation("ReceiverTransactions")
+}
+
+model Wallet {
+    id            String    @id @default(uuid())
+    userId        String    @unique
+    user          User      @relation(fields: [userId], references: [id])
+    btcAddress    String    @unique
+    ethAddress    String    @unique
+    trcAddress    String    @unique
+    btcPrivateKey String // Encrypted
+    ethPrivateKey String // Encrypted
+    trcPrivateKey String // Encrypted
+    createdAt     DateTime  @default(now())
+    updatedAt     DateTime  @updatedAt
+    balances      Balance[]
+}
+
+model Balance {
+    id        String   @id @default(uuid())
+    walletId  String
+    wallet    Wallet   @relation(fields: [walletId], references: [id])
+    coinType  CoinType
+    amount    String // Using String for precise decimal handling
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    @@unique([walletId, coinType])
+}
+
+model Transaction {
+    id         String     @id @default(uuid())
+    userId     String // User who initiated the transaction
+    user       User       @relation("UserTransactions", fields: [userId], references: [id])
+    senderId   String
+    sender     User       @relation("SenderTransactions", fields: [senderId], references: [id])
+    receiverId String
+    receiver   User       @relation("ReceiverTransactions", fields: [receiverId], references: [id])
+    coinType   CoinType
+    amount     String // Using String for precise decimal handling
+    txType     TxType
+    status     TxStatus
+    txHash     String? // For on-chain transactions
+    lightning  LNInvoice? // For Lightning Network transactions
+    createdAt  DateTime   @default(now())
+    updatedAt  DateTime   @updatedAt
+}
+
+model LNInvoice {
+    id             String      @id @default(uuid())
+    transactionId  String      @unique
+    transaction    Transaction @relation(fields: [transactionId], references: [id])
+    paymentHash    String      @unique
+    paymentRequest String // The Lightning invoice
+    amount         String // Amount in sats
+    status         LNStatus
+    createdAt      DateTime    @default(now())
+    updatedAt      DateTime    @updatedAt
+}
+
+enum CoinType {
+    BTC
+    ETH
+    USDT
+}
+
+enum TxType {
+    INTERNAL // Off-chain transfer within the app
+    WITHDRAWAL // On-chain withdrawal
+    LIGHTNING // Lightning Network payment
+}
+
+enum TxStatus {
+    PENDING
+    COMPLETED
+    FAILED
+}
+
+enum LNStatus {
+    PENDING
+    PAID
+    EXPIRED
+    FAILED
+}
