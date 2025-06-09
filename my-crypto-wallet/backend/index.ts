@@ -1,32 +1,27 @@
 import express from 'express';
-import cors from 'cors';
-import dotenv from 'dotenv';
-import { PrismaClient } from '@prisma/client';
-import { auth } from './middleware/auth';
-import { errorHandler } from './middleware/error';
-import walletRoutes from './routes/wallet';
-import transactionRoutes from './routes/transaction';
-import lightningRoutes from './routes/lightning';
+import morgan from 'morgan';
+import helmet from 'helmet';
+import compression from 'compression';
+import { config } from 'dotenv';
 
-dotenv.config();
+// Load environment variables
+config();
 
 const app = express();
-const prisma = new PrismaClient();
+const port = process.env.PORT || 3000;
 
 // Middleware
-app.use(cors());
+app.use(helmet());
+app.use(compression());
+app.use(morgan('dev'));
 app.use(express.json());
 
-// Routes
-app.use('/api/wallet', auth, walletRoutes);
-app.use('/api/transaction', auth, transactionRoutes);
-app.use('/api/lightning', auth, lightningRoutes);
-
-// Error handling
-app.use(errorHandler);
-
-const PORT = process.env.PORT || 3000;
-
-app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
+// Basic route for testing
+app.get('/', (req, res) => {
+    res.json({ message: 'Crypto Wallet API is running!' });
 });
+
+// Start server
+app.listen(port, () => {
+    console.log(`Server is running on port ${port}`);
+}); 
